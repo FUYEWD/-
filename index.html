@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>痛苦指数计算器</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --color-primary: #4f46e5;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-extreme: #7f1d1d;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .card {
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+        }
+
+        .result-box {
+            transition: all 0.5s ease;
+        }
+
+        .history-item {
+            transition: background-color 0.3s ease;
+        }
+
+        .history-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .progress-bar {
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            background-color: #e2e8f0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+
+        .misery-low {
+            color: var(--color-success);
+        }
+
+        .misery-mid-low {
+            color: var(--color-warning);
+        }
+
+        .misery-mid {
+            color: #f97316;
+        }
+
+        .misery-high {
+            color: var(--color-danger);
+        }
+
+        .misery-extreme {
+            color: var(--color-extreme);
+        }
+
+        .floating-label {
+            transform: translateY(0);
+            transition: transform 0.2s ease, font-size 0.2s ease;
+        }
+
+        .input-field:focus+.floating-label,
+        .input-field:not(:placeholder-shown)+.floating-label {
+            transform: translateY(-150%);
+            font-size: 0.75rem;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 1.8rem;
+            }
+
+            .misery-value {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- 標題區域 -->
+        <div class="text-center mb-10 mt-6">
+            <div class="flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-indigo-600 mr-3" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <h1 class="text-4xl font-bold text-gray-800 header-title">痛苦指數計算器</h1>
+            </div>
+            <p class="text-gray-600 text-lg mb-2">計算經濟健康狀況（通脹率 + 失業率）</p>
+            <p class="text-xs text-gray-500">最後更新: <span id="last-updated">2025-06-29 12:45:22</span></p>
+
+            <!-- 經濟狀態指示器 -->
+            <div class="mt-6 flex justify-center">
+                <div class="flex items-center space-x-8">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span class="text-xs">良好</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                        <span class="text-xs">尚可</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                        <span class="text-xs">壓力</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                        <span class="text-xs">困難</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-red-800 mr-2"></div>
+                        <span class="text-xs">危機</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 輸入和結果區塊 -->
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- 數據輸入 -->
+            <div class="bg-white card p-6">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    輸入經濟數據
+                </h2>
+
+                <div class="space-y-6">
+                    <!-- 通脹率輸入 -->
+                    <div class="relative">
+                        <input type="number" step="0.1" id="inflation-rate"
+                            class="input-field w-full px-4 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg placeholder-transparent"
+                            placeholder=" " />
+                        <label class="floating-label absolute left-4 top-3 text-gray-500 pointer-events-none">通脹率
+                            (%)</label>
+                    </div>
+
+                    <!-- 失業率輸入 -->
+                    <div class="relative">
+                        <input type="number" step="0.1" id="unemployment-rate"
+                            class="input-field w-full px-4 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg placeholder-transparent"
+                            placeholder=" " />
+                        <label class="floating-label absolute left-4 top-3 text-gray-500 pointer-events-none">失業率
+                            (%)</label>
+                    </div>
+
+                    <!-- 計算按鈕 -->
+                    <div class="flex gap-3 pt-2">
+                        <button id="calculate-btn"
+                            class="btn-primary flex-1 text-white py-3 px-6 rounded-lg font-semibold text-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            計算痛苦指數
+                        </button>
+                        <button id="clear-btn"
+                            class="px-5 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold">
+                            清除
+                        </button>
+                    </div>
+
+                    <!-- 示例數據 -->
+                    <div class="pt-4 border-t border-gray-100">
+                        <p class="text-sm text-gray-600 mb-2">試用示例數據:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button data-inflation="2.5" data-unemployment="3.8"
+                                class="example-btn px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-full hover:bg-blue-200">
+                                健康經濟
+                            </button>
+                            <button data-inflation="5.2" data-unemployment="6.7"
+                                class="example-btn px-3 py-1.5 bg-yellow-100 text-yellow-700 text-sm rounded-full hover:bg-yellow-200">
+                                中等壓力
+                            </button>
+                            <button data-inflation="12.3" data-unemployment="9.5"
+                                class="example-btn px-3 py-1.5 bg-red-100 text-red-700 text-sm rounded-full hover:bg-red-200">
+                                經濟危機
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 結果顯示 -->
+            <div class="bg-white card p-6">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    分析結果
+                </h2>
+
+                <div id="result-container" class="text-center">
+                    <div class="text-gray-500 py-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        <p>請輸入通脹率和失業率來計算經濟痛苦指數</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 歷史記錄 -->
+        <div id="history-container" class="hidden mt-8 bg-white card p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    計算歷史
+                </h2>
+                <button id="clear-history-btn"
+                    class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors text-sm">
+                    清除歷史
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">時間</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">通脹率</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">失業率</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">痛苦指數</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-list">
+                        <!-- 歷史記錄將在這裡顯示 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 指數說明 -->
+        <div class="mt-8 bg-white card p-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">關於痛苦指數</h2>
+            <div class="text-gray-700 space-y-4">
+                <p>
+                    痛苦指數（Misery Index）是由經濟學家亞瑟·奧肯（Arthur Okun）在1970年代提出的經濟指標，
+                    用來衡量一個經濟體的基本健康狀況。該指數通過將通脹率與失業率相加，反映普通民眾的經濟壓力程度。
+                </p>
+
+                <div class="p-4 bg-blue-50 rounded-lg">
+                    <p class="font-medium text-lg text-blue-800 mb-2">計算公式：</p>
+                    <p class="text-center text-xl font-bold">痛苦指數 = 通脹率 + 失業率</p>
+                </div>
+
+                <div>
+                    <p class="font-medium text-lg mb-3">指數解讀標準：</p>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2">
+                        <div class="p-3 rounded-lg border border-green-200 bg-green-50">
+                            <div class="text-green-800 font-bold">0-5</div>
+                            <div class="text-green-700 mt-1">經濟狀況良好</div>
+                            <div class="text-xs text-green-600 mt-2">低通脹、充分就業</div>
+                        </div>
+                        <div class="p-3 rounded-lg border border-yellow-200 bg-yellow-50">
+                            <div class="text-yellow-800 font-bold">5-10</div>
+                            <div class="text-yellow-700 mt-1">經濟狀況尚可</div>
+                            <div class="text-xs text-yellow-600 mt-2">溫和通脹、就業穩定</div>
+                        </div>
+                        <div class="p-3 rounded-lg border border-orange-200 bg-orange-50">
+                            <div class="text-orange-800 font-bold">10-15</div>
+                            <div class="text-orange-700 mt-1">經濟面臨壓力</div>
+                            <div class="text-xs text-orange-600 mt-2">通脹上升、就業市場緊張</div>
+                        </div>
+                        <div class="p-3 rounded-lg border border-red-200 bg-red-50">
+                            <div class="text-red-800 font-bold">15-20</div>
+                            <div class="text-red-700 mt-1">經濟狀況困難</div>
+                            <div class="text-xs text-red-600 mt-2">高通脹、失業率上升</div>
+                        </div>
+                        <div class="p-3 rounded-lg border border-red-800 bg-red-100">
+                            <div class="text-red-900 font-bold">20+</div>
+                            <div class="text-red-800 mt-1">經濟危機狀態</div>
+                            <div class="text-xs text-red-700 mt-2">惡性通脹、大規模失業</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <p class="font-medium text-lg mb-2">使用須知：</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>此計算器僅供參考，不構成專業經濟建議</li>
+                        <li>實際經濟狀況需考慮更多因素（GDP增長、收入分配等）</li>
+                        <li>數據來源應採用官方統計機構發布的指標</li>
+                        <li>計算結果會自動保存在瀏覽器的本地存儲中</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 痛苦指數解讀函數
+        function interpretMiseryIndex(index) {
+            if (index < 5) return {
+                level: '經濟良好',
+                color: 'text-green-600 misery-low',
+                desc: '低通脹和低失業率，經濟處於健康狀態',
+                bg: 'bg-green-50',
+                border: 'border-green-200'
+            };
+            if (index < 10) return {
+                level: '經濟尚可',
+                color: 'text-yellow-600 misery-mid-low',
+                desc: '溫和通脹和穩定就業，經濟基本健康',
+                bg: 'bg-yellow-50',
+                border: 'border-yellow-200'
+            };
+            if (index < 15) return {
+                level: '經濟壓力',
+                color: 'text-orange-600 misery-mid',
+                desc: '通脹上升伴隨就業市場壓力，需關注經濟趨勢',
+                bg: 'bg-orange-50',
+                border: 'border-orange-200'
+            };
+            if (index < 20) return {
+                level: '經濟困難',
+                color: 'text-red-600 misery-high',
+                desc: '高通脹和高失業率，民眾經濟壓力明顯增大',
+                bg: 'bg-red-50',
+                border: 'border-red-200'
+            };
+            return {
+                level: '經濟危機',
+                color: 'text-red-800 misery-extreme',
+                desc: '惡性通脹和大規模失業，經濟處於危機狀態',
+                bg: 'bg-red-100',
+                border: 'border-red-300'
+            };
+        }
+
+        // 顯示結果
+        function displayResults(inflation, unemployment, index, interpretation) {
+            const resultContainer = document.getElementById('result-container');
+
+            // 創建進度條
+            const progressWidth = Math.min(index, 30) * 3.33;
+
+            resultContainer.innerHTML = `
+                <div class="result-box">
+                    <div class="flex justify-center items-end mb-2">
+                        <div class="misery-value text-5xl font-bold text-indigo-600">${index.toFixed(1)}</div>
+                        <div class="text-lg text-gray-600 ml-2 pb-1">痛苦指數</div>
+                    </div>
+                    
+                    <div class="progress-bar mb-6">
+                        <div class="progress-fill ${interpretation.bg}" style="width: ${progressWidth}%"></div>
+                    </div>
+                    
+                    <div class="${interpretation.bg} ${interpretation.border} rounded-xl p-5 mb-6">
+                        <div class="text-xl font-bold ${interpretation.color} mb-1">${interpretation.level}</div>
+                        <div class="text-gray-700">${interpretation.desc}</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                            <div class="font-semibold text-blue-800 mb-1">通脹率</div>
+                            <div class="text-2xl font-bold text-blue-600">${inflation.toFixed(1)}%</div>
+                        </div>
+                        <div class="bg-orange-50 p-4 rounded-xl border border-orange-200">
+                            <div class="font-semibold text-orange-800 mb-1">失業率</div>
+                            <div class="text-2xl font-bold text-orange-600">${unemployment.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-sm text-gray-500 mt-4">
+                        計算時間: ${new Date().toLocaleString('zh-TW')}
+                    </div>
+                </div>
+            `;
+
+            // 觸發動畫
+            setTimeout(() => {
+                const progressFill = document.querySelector('.progress-fill');
+                if (progressFill) progressFill.style.width = `${progressWidth}%`;
+            }, 100);
+        }
+
+        // 添加到歷史記錄
+        function addToHistory(inflation, unemployment, index, interpretation) {
+            const now = new Date();
+            const historyRecord = {
+                id: Date.now(),
+                date: now.toLocaleString('zh-TW'),
+                inflation: inflation,
+                unemployment: unemployment,
+                index: index,
+                interpretation: interpretation
+            };
+
+            // 獲取歷史記錄
+            let history = JSON.parse(localStorage.getItem('miseryHistory') || '[]');
+
+            // 添加新記錄並保留最近5條
+            history = [historyRecord, ...history].slice(0, 5);
+
+            // 保存到localStorage
+            localStorage.setItem('miseryHistory', JSON.stringify(history));
+
+            // 更新UI
+            updateHistoryUI(history);
+        }
+
+        // 更新歷史記錄UI
+        function updateHistoryUI(history) {
+            if (history.length === 0) {
+                document.getElementById('history-container').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('history-container').classList.remove('hidden');
+
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
+
+            history.forEach(record => {
+                const row = document.createElement('tr');
+                row.className = 'history-item border-b border-gray-100';
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-sm text-gray-600">${record.date}</td>
+                    <td class="py-3 px-4">${record.inflation.toFixed(1)}%</td>
+                    <td class="py-3 px-4">${record.unemployment.toFixed(1)}%</td>
+                    <td class="py-3 px-4 font-semibold">${record.index.toFixed(1)}</td>
+                    <td class="py-3 px-4 font-medium ${record.interpretation.color}">
+                        ${record.interpretation.level}
+                    </td>
+                `;
+                historyList.appendChild(row);
+            });
+        }
+
+        // 清除所有輸入和結果
+        function clearAll() {
+            document.getElementById('inflation-rate').value = '';
+            document.getElementById('unemployment-rate').value = '';
+            document.getElementById('result-container').innerHTML = `
+                <div class="text-gray-500 py-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <p>請輸入通脹率和失業率來計算經濟痛苦指數</p>
+                </div>
+            `;
+        }
+
+        // 清除歷史記錄
+        function clearHistory() {
+            localStorage.removeItem('miseryHistory');
+            document.getElementById('history-container').classList.add('hidden');
+        }
+
+        // 頁面加載時初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            // 更新最後更新時間
+            const now = new Date();
+            document.getElementById('last-updated').textContent =
+                `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+            // 加載歷史記錄
+            const history = JSON.parse(localStorage.getItem('miseryHistory') || '[]');
+            updateHistoryUI(history);
+
+            // 綁定計算按鈕
+            document.getElementById('calculate-btn').addEventListener('click', function () {
+                const inflationInput = document.getElementById('inflation-rate');
+                const unemploymentInput = document.getElementById('unemployment-rate');
+
+                const inflationRate = parseFloat(inflationInput.value);
+                const unemploymentRate = parseFloat(unemploymentInput.value);
+
+                // 驗證輸入
+                if (isNaN(inflationRate) || isNaN(unemploymentRate)) {
+                    alert('請輸入有效的數值');
+                    return;
+                }
+
+                if (inflationRate < 0 || unemploymentRate < 0) {
+                    alert('數值不能為負數');
+                    return;
+                }
+
+                const miseryIndex = inflationRate + unemploymentRate;
+                const interpretation = interpretMiseryIndex(miseryIndex);
+
+                // 顯示結果
+                displayResults(inflationRate, unemploymentRate, miseryIndex, interpretation);
+
+                // 添加到歷史記錄
+                addToHistory(inflationRate, unemploymentRate, miseryIndex, interpretation);
+            });
+
+            // 綁定清除按鈕
+            document.getElementById('clear-btn').addEventListener('click', clearAll);
+
+            // 綁定清除歷史按鈕
+            document.getElementById('clear-history-btn').addEventListener('click', clearHistory);
+
+            // 示例數據按鈕
+            document.querySelectorAll('.example-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const inflation = parseFloat(this.getAttribute('data-inflation'));
+                    const unemployment = parseFloat(this.getAttribute('data-unemployment'));
+
+                    document.getElementById('inflation-rate').value = inflation;
+                    document.getElementById('unemployment-rate').value = unemployment;
+
+                    // 觸發計算
+                    document.getElementById('calculate-btn').click();
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
